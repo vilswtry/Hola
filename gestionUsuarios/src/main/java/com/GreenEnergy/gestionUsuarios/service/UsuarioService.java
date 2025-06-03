@@ -1,94 +1,124 @@
 package com.GreenEnergy.gestionUsuarios.service;
 
 import com.GreenEnergy.gestionUsuarios.model.Usuario;
+import com.GreenEnergy.gestionUsuarios.DTO.UsuarioDto;
+import com.GreenEnergy.gestionUsuarios.model.Cliente;
 import com.GreenEnergy.gestionUsuarios.model.Rol;
+import com.GreenEnergy.gestionUsuarios.model.Tecnico;
 import com.GreenEnergy.gestionUsuarios.repository.UsuarioRepository;
-import com.GreenEnergy.gestionUsuarios.repository.RolRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
 
-    private final UsuarioRepository usuarioRepository;
-    private final RolRepository rolRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, RolRepository rolRepository) {
-        this.usuarioRepository = usuarioRepository;
-        this.rolRepository = rolRepository;
-    }
+    public UsuarioDto crearUsuario(UsuarioDto dto) {
+        Usuario usuario = new Usuario();
+        usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
+        usuario.setRut(dto.getRut());
+        usuario.setEmail(dto.getEmail());
+        usuario.setTelefono(dto.getTelefono());
+        usuario.setPassword(dto.getPassword());
+        usuario.setRol(dto.getRol());
 
-    // Métodos para Usuarios Generales
-    public List<Usuario> listarUsuarios() {
-        return usuarioRepository.findAll();
-    }
+        if (dto.getRol() == Rol.CLIENTE) {
+            Cliente cliente = new Cliente();
+            cliente.setNombre(dto.getNombre());
+            cliente.setApellido(dto.getApellido());
+            cliente.setRut(dto.getRut());
+            cliente.setEmail(dto.getEmail());
+            cliente.setTelefono(dto.getTelefono());
 
-    public Optional<Usuario> obtenerUsuarioPorId(Long id) {
-        return usuarioRepository.findById(id);
-    }
+            cliente.setUsuario(usuario);
+            usuario.setCliente(cliente);
+        } else if (dto.getRol() == Rol.TECNICO) {
+            Tecnico tecnico = new Tecnico();
+            tecnico.setNombre(dto.getNombre());
+            tecnico.setApellido(dto.getApellido());
+            tecnico.setRut(dto.getRut());
+            tecnico.setEmail(dto.getEmail());
+            tecnico.setTelefono(dto.getTelefono());
 
-    public Optional<Usuario> obtenerUsuarioPorUsername(String username) {
-        return usuarioRepository.findByUsername(username);
-    }
-
-    public Usuario crearUsuario(Usuario usuario) {
-        return usuarioRepository.save(usuario);
-    }
-
-    public Usuario actualizarUsuario(Long id, Usuario usuario) {
-        Usuario usuarioExistente = usuarioRepository.findById(id).orElse(null);
-        if (usuarioExistente != null) {
-            usuarioExistente.setUsername(usuario.getUsername());
-            usuarioExistente.setCorreo(usuario.getCorreo()); // Asumiendo que usas 'correo' ahora
-            usuarioExistente.setRoles(usuario.getRoles());
-            usuarioExistente.setEspecialidad(usuario.getEspecialidad());
-            if (usuario.getDisponible() != null) {
-                usuarioExistente.setDisponible(usuario.getDisponible());
-            }
-            return usuarioRepository.save(usuarioExistente);
+            tecnico.setUsuario(usuario);
+            usuario.setTecnico(tecnico);
         }
-        return null;
+
+        usuarioRepository.save(usuario);
+        return dto;
+    }
+
+    public UsuarioDto actualizarUsuario(Long id, UsuarioDto dto) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
+        usuario.setRut(dto.getRut());
+        usuario.setEmail(dto.getEmail());
+        usuario.setTelefono(dto.getTelefono());
+        usuario.setPassword(dto.getPassword());
+        usuario.setRol(dto.getRol());
+
+        if (usuario.getRol() == Rol.CLIENTE) {
+            Cliente cliente = usuario.getCliente();
+            if (cliente == null) {
+                cliente = new Cliente();
+                cliente.setUsuario(usuario);
+                usuario.setCliente(cliente);
+            }
+            cliente.setNombre(dto.getNombre());
+            cliente.setApellido(dto.getApellido());
+            cliente.setRut(dto.getRut());
+            cliente.setEmail(dto.getEmail());
+            cliente.setTelefono(dto.getTelefono());
+
+        } else if (usuario.getRol() == Rol.TECNICO) {
+            Tecnico tecnico = usuario.getTecnico();
+            if (tecnico == null) {
+                tecnico = new Tecnico();
+                tecnico.setUsuario(usuario);
+                usuario.setTecnico(tecnico);
+            }
+            tecnico.setNombre(dto.getNombre());
+            tecnico.setApellido(dto.getApellido());
+            tecnico.setRut(dto.getRut());
+            tecnico.setEmail(dto.getEmail());
+            tecnico.setTelefono(dto.getTelefono());
+        }
+
+        usuarioRepository.save(usuario);
+        return dto;
     }
 
     public void eliminarUsuario(Long id) {
-        usuarioRepository.deleteById(id);
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        usuarioRepository.delete(usuario);
     }
 
-    public void asignarRoles(Long usuarioId, Set<Rol> roles) {
-        Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
-        if (usuario != null) {
-            usuario.setRoles(roles);
-            usuarioRepository.save(usuario);
-        }
+    public UsuarioDto mapToDto(Usuario usuario) {
+        if (usuario == null)
+            return null;
+        UsuarioDto dto = new UsuarioDto();
+        dto.setId(usuario.getId());
+        dto.setNombre(usuario.getNombre());
+        dto.setApellido(usuario.getApellido());
+        dto.setRut(usuario.getRut());
+        dto.setEmail(usuario.getEmail());
+        dto.setTelefono(usuario.getTelefono());
+        dto.setPassword(null);
+        dto.setRol(usuario.getRol());
+        return dto;
     }
 
-    // Métodos específicos para Técnicos
-    public List<Usuario> listarTecnicos() {
-        return usuarioRepository.findAll().stream()
-                .filter(u -> u.getEspecialidad() != null)
-                .collect(Collectors.toList());
-    }
-
-    public List<Usuario> listarTecnicosPorEspecialidad(String especialidad) {
-        return usuarioRepository.findByEspecialidad(especialidad);
-    }
-
-    public List<Usuario> listarTecnicosDisponibles() {
-        return usuarioRepository.findByDisponibleTrue();
-    }
-
-    public List<Usuario> listarTecnicosNoDisponibles() {
-        return usuarioRepository.findByDisponibleFalse();
-    }
-
-    public void actualizarDisponibilidadTecnico(Long id, boolean disponible) {
-        Usuario tecnico = usuarioRepository.findById(id).orElse(null);
-        if (tecnico != null && tecnico.getEspecialidad() != null) {
-            tecnico.setDisponible(disponible);
-            usuarioRepository.save(tecnico);
-        }
+    public Usuario buscarPorId(Long id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 }
