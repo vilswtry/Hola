@@ -1,11 +1,19 @@
 package com.GreenEnergy.registroClientes.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "clientes")
 @Data
+@Table(name = "clientes")
 @NoArgsConstructor
 @AllArgsConstructor
 public class Cliente {
@@ -13,18 +21,13 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String nombre;
-
-    @Column(nullable = false, unique = true)
+    private String apellido;
     private String rut;
-
-    @Column(nullable = false)
-    private String direccion;
-
-    @Column(nullable = false)
+    private String email;
     private String telefono;
 
-    @Column(nullable = false)
-    private String correo;
+    @OneToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
 }
